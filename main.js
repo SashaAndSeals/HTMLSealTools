@@ -1,1 +1,3 @@
-document.body.innerHTML = `SealTools`;
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.innerHTML = `SealTools`;
+});
