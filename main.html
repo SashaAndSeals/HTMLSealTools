@@ -1,1 +1,368 @@
-SealTools!
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tiny MultiTool</title>
+<style>
+:root{--w:260px;--bg:#f6f7f8;--muted:#666}
+*{box-sizing:border-box;font-family:Segoe UI,Roboto,Arial,sans-serif}
+body{margin:0;height:100vh;display:flex;background:#fff}
+#sidebar{width:var(--w);background:var(--bg);padding:10px;overflow:auto;transition:transform .18s;box-shadow:1px 0 0 rgba(0,0,0,.06)}
+#sidebar.collapsed{transform:translateX(calc(-1*var(--w)));}
+h1{font-size:16px;margin:6px 0}
+.btn{display:block;padding:8px;margin:6px 0;border-radius:6px;border:1px solid rgba(0,0,0,.06);background:#fff;text-decoration:none;color:#000;text-align:left;cursor:pointer}
+.topbar{display:flex;align-items:center;gap:8px;padding:10px;background:#fff;border-bottom:1px solid #eee;width:100%}
+#main{flex:1;padding:12px;overflow:auto}
+.row{display:flex;gap:8px;align-items:center;margin:8px 0}
+.area{width:100%;min-height:120px;padding:8px;border:1px solid #eee;border-radius:6px;background:#fff;resize:vertical;overflow:auto;font-family:monospace;font-size:13px}
+.small{font-size:13px;padding:6px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap}
+.grid{display:grid;gap:8px}
+.grid.cols2{grid-template-columns:1fr 1fr}
+label{font-size:13px;color:var(--muted)}
+canvas{border:1px solid #ddd;background:#fff}
+.footer{font-size:12px;color:#999;margin-top:14px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h1>Tiny MultiTool</h1>
+  <div class="toolbar">
+    <button class="btn" data-tool="file">File</button>
+    <button class="btn" data-tool="visual">Visual</button>
+    <button class="btn" data-tool="util">Utility</button>
+    <button class="btn" data-tool="crypto">Crypto</button>
+    <button class="btn" data-tool="dev">Dev</button>
+  </div>
+  <div class="footer">Minimal • Fast • Local only</div>
+</div>
+
+<div style="flex:1;display:flex;flex-direction:column">
+  <div class="topbar">
+    <button id="toggle" class="btn small" title="Toggle sidebar">☰</button>
+    <div id="title">File</div>
+    <div style="flex:1"></div>
+    <button id="openData" class="btn small" title="Get data: URI">Get data:URI</button>
+    <button id="openNew" class="btn small" title="Open in new window">Open</button>
+  </div>
+
+  <div id="main">
+    <!-- FILE TOOL -->
+    <section id="file" class="panel">
+      <h2>File tools</h2>
+      <div class="grid cols2">
+        <div>
+          <label>Input / Output</label>
+          <textarea id="fileIn" class="area" placeholder="Type or paste text here"></textarea>
+        </div>
+        <div>
+          <label>Result</label>
+          <textarea id="fileOut" class="area" readonly></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn small" id="b64enc">Base64 ⤴</button>
+        <button class="btn small" id="b64dec">Base64 ⤵</button>
+        <button class="btn small" id="txt2bin">Text→Binary</button>
+        <button class="btn small" id="bin2txt">Binary→Text</button>
+        <button class="btn small" id="lzcomp">Compress ⇄</button>
+      </div>
+      <div style="font-size:12px;color:#666">Compress uses a tiny LZW implementation (text only).</div>
+    </section>
+
+    <!-- VISUAL -->
+    <section id="visual" class="panel hide">
+      <h2>Visual tools</h2>
+      <div class="row">
+        <label>Color</label>
+        <input id="col1" type="color" value="#ff0000">
+        <input id="col2" type="color" value="#0000ff">
+        <button id="makeGrad" class="btn small">Make Gradient</button>
+      </div>
+      <div class="row">
+        <canvas id="pix" width="240" height="160"></canvas>
+        <div>
+          <button id="clearPix" class="btn small">Clear</button>
+          <button id="savePix" class="btn small">Copy PNG</button>
+          <div style="margin-top:6px">
+            <label>Brush size</label><input id="brush" type="number" value="6" style="width:64px">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UTIL -->
+    <section id="util" class="panel hide">
+      <h2>Utility</h2>
+
+      <div>
+        <label>Calculator</label>
+        <input id="calcExpr" class="small area" style="height:34px" placeholder="e.g. (3+4)*2">
+        <div><button id="calcRun" class="btn small">Compute</button><span id="calcRes" style="margin-left:8px;color:#333"></span></div>
+      </div>
+
+      <hr>
+      <div>
+        <label>Unit converter (length)</label>
+        <div class="row">
+          <input id="ucVal" class="small" placeholder="value" style="width:120px">
+          <select id="ucFrom" class="small"><option>m</option><option>km</option><option>cm</option><option>mm</option><option>ft</option><option>in</option></select>
+          <select id="ucTo" class="small"><option>m</option><option>km</option><option>cm</option><option>mm</option><option>ft</option><option>in</option></select>
+          <button id="ucGo" class="btn small">Convert</button>
+          <span id="ucRes" style="margin-left:8px"></span>
+        </div>
+      </div>
+
+      <hr>
+      <div>
+        <label>Stopwatch / Timer</label>
+        <div class="row">
+          <button id="swStart" class="btn small">Start</button>
+          <button id="swStop" class="btn small">Stop</button>
+          <button id="swReset" class="btn small">Reset</button>
+          <span id="swTime" style="margin-left:8px">00:00.0</span>
+        </div>
+        <div class="row">
+          <input id="tInput" class="small" placeholder="seconds" style="width:120px">
+          <button id="tStart" class="btn small">Start Timer</button>
+          <span id="tRem" style="margin-left:8px"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRYPTO -->
+    <section id="crypto" class="panel hide">
+      <h2>Crypto</h2>
+      <div class="row">
+        <textarea id="cryptoIn" class="area" placeholder="text to encrypt/hash"></textarea>
+      </div>
+      <div class="row">
+        <input id="pwd" class="small" placeholder="password (for XOR encrypt)">
+        <button id="xorEnc" class="btn small">XOR Encrypt</button>
+        <button id="xorDec" class="btn small">XOR Decrypt</button>
+        <button id="sha256" class="btn small">SHA-256</button>
+        <button id="md5" class="btn small">MD5</button>
+      </div>
+      <div class="row">
+        <textarea id="cryptoOut" class="area" readonly></textarea>
+      </div>
+      <div style="font-size:12px;color:#666">XOR is simple symmetric obfuscation; use only for convenience.</div>
+    </section>
+
+    <!-- DEV -->
+    <section id="dev" class="panel hide">
+      <h2>Developer</h2>
+      <div>
+        <label>JSON Formatter</label>
+        <textarea id="jsonIn" class="area" placeholder='{"a":1}'></textarea>
+        <div class="row"><button id="fmtJson" class="btn small">Format</button><button id="minJson" class="btn small">Minify</button></div>
+      </div>
+
+      <hr>
+      <div>
+        <label>HTML / JS minify (simple)</label>
+        <textarea id="minIn" class="area" placeholder="paste HTML or JS"></textarea>
+        <div class="row"><button id="minGo" class="btn small">Minify</button></div>
+      </div>
+
+      <hr>
+      <div>
+        <label>Sandbox console</label>
+        <textarea id="runIn" class="area" placeholder="console.log('hi')"></textarea>
+        <div class="row"><button id="runBtn" class="btn small">Run</button><button id="clearConsole" class="btn small">Clear</button></div>
+        <textarea id="consoleOut" class="area" readonly></textarea>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// --- tiny UI ---
+const panels = Array.from(document.querySelectorAll('.panel'));
+const title = el => document.getElementById('title').textContent = el;
+document.querySelectorAll('#sidebar .btn').forEach(b=>{
+  b.onclick=()=>{
+    const t=b.dataset.tool;
+    panels.forEach(p=>p.id===t? p.classList.remove('hide'): p.classList.add('hide'));
+    title(t.charAt(0).toUpperCase()+t.slice(1));
+  };
+});
+document.getElementById('toggle').onclick=()=>{
+  document.getElementById('sidebar').classList.toggle('collapsed');
+};
+
+// --- file tools ---
+const inA=document.getElementById('fileIn'), outA=document.getElementById('fileOut');
+document.getElementById('b64enc').onclick=()=>outA.value=btoa(unescape(encodeURIComponent(inA.value||"")));
+document.getElementById('b64dec').onclick=()=>{
+  try{outA.value=decodeURIComponent(escape(atob(inA.value||"")));}catch(e){outA.value='Error: invalid base64'}
+};
+document.getElementById('txt2bin').onclick=()=>outA.value=Array.from(unescape(encodeURIComponent(inA.value||""))).map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+document.getElementById('bin2txt').onclick=()=>{try{outA.value=decodeURIComponent(escape(String.fromCharCode(...(inA.value||'').trim().split(/\s+/).map(b=>parseInt(b,2))));}catch(e){outA.value='Error'}}; 
+
+// tiny LZW
+function lzwEncode(s){
+  const dict=new Map(); for(let i=0;i<256;i++)dict.set(String.fromCharCode(i),i);
+  let out=[], w=''; let dictSize=256;
+  for(let i=0;i<s.length;i++){
+    let c=s.charAt(i); let wc=w+c;
+    if(dict.has(wc)) w=wc; else { out.push(dict.get(w)); dict.set(wc,dictSize++); w=c; }
+  }
+  if(w!=='') out.push(dict.get(w));
+  return out.map(n=>String.fromCharCode(n)).join('');
+}
+function lzwDecode(s){
+  const dict=[]; for(let i=0;i<256;i++)dict[i]=String.fromCharCode(i);
+  let w=s.charAt(0), result=w; let entry; let dictSize=256;
+  for(let i=1;i<s.length;i++){
+    let k=s.charCodeAt(i);
+    if(dict[k]) entry=dict[k]; else entry=w + w.charAt(0);
+    result+=entry;
+    dict[dictSize++]=w+entry.charAt(0);
+    w=entry;
+  }
+  return decodeURIComponent(escape(result));
+}
+document.getElementById('lzcomp').onclick=()=>{
+  try{
+    if(document.getElementById('fileOut').value) { inA.value = lzwEncode(inA.value || ""); outA.value='compressed -> placed back into input'; }
+    else { outA.value = lzwEncode(inA.value || ""); }
+  }catch(e){outA.value='Error'}
+};
+
+// --- visual ---
+const canvas=document.getElementById('pix'), ctx=canvas.getContext('2d');
+ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+let drawing=false, brush=document.getElementById('brush');
+canvas.onpointerdown=e=>{drawing=true; draw(e)};
+canvas.onpointermove=e=>drawing&&draw(e);
+window.onpointerup=()=>drawing=false;
+function draw(e){ const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top; ctx.fillStyle=document.getElementById('col1').value; ctx.beginPath(); ctx.arc(x,y,Math.max(1,parseInt(brush.value||4)),0,Math.PI*2); ctx.fill();}
+document.getElementById('clearPix').onclick=()=>{ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);}
+document.getElementById('savePix').onclick=()=>{navigator.clipboard.writeText(canvas.toDataURL()).then(()=>alert('DataURL copied to clipboard'));};
+document.getElementById('makeGrad').onclick=()=>{
+  const g=ctx.createLinearGradient(0,0,canvas.width,0); g.addColorStop(0,document.getElementById('col1').value); g.addColorStop(1,document.getElementById('col2').value);
+  ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
+};
+
+// --- util ---
+document.getElementById('calcRun').onclick=()=>{
+  try{ const res=Function('"use strict";return ('+document.getElementById('calcExpr').value+')')(); document.getElementById('calcRes').textContent=String(res);}catch(e){document.getElementById('calcRes').textContent='err'}
+};
+document.getElementById('ucGo').onclick=()=>{
+  const v=parseFloat(document.getElementById('ucVal').value); if(isNaN(v)){document.getElementById('ucRes').textContent='?';return}
+  const f=document.getElementById('ucFrom').value,t=document.getElementById('ucTo').value;
+  const toM={m:1,km:1000,cm:0.01,mm:0.001,ft:0.3048,in:0.0254};
+  const res=v*toM[f]/toM[t]; document.getElementById('ucRes').textContent=res;
+};
+// stopwatch
+let swStartT=0, swElapsed=0, swTimer=null;
+function swUpdate(){ const t=Date.now()-swStartT+swElapsed; const s=Math.floor(t/1000); const ms=Math.floor((t%1000)/100); document.getElementById('swTime').textContent = String(s).padStart(2,'0')+':' + ms; }
+document.getElementById('swStart').onclick=()=>{ if(!swTimer){ swStartT=Date.now(); swTimer=setInterval(swUpdate,100);} };
+document.getElementById('swStop').onclick=()=>{ if(swTimer){ clearInterval(swTimer); swTimer=null; swElapsed += Date.now()-swStartT;} };
+document.getElementById('swReset').onclick=()=>{ clearInterval(swTimer); swTimer=null; swElapsed=0; document.getElementById('swTime').textContent='00:00.0'; };
+
+// timer
+let tTimer=null;
+document.getElementById('tStart').onclick=()=>{
+  clearInterval(tTimer);
+  let s=parseFloat(document.getElementById('tInput').value||0);
+  if(isNaN(s)||s<=0) return;
+  document.getElementById('tRem').textContent=s+'s';
+  tTimer=setInterval(()=>{ s-=1; document.getElementById('tRem').textContent=s+'s'; if(s<=0){ clearInterval(tTimer); tTimer=null; alert('Timer done'); document.getElementById('tRem').textContent=''; } },1000);
+};
+
+// --- crypto ---
+// XOR encrypt: simple
+function xorWithKey(text,key){
+  if(!key) return text;
+  const tk= Array.from(unescape(encodeURIComponent(key))).map(c=>c.charCodeAt(0));
+  const t=Array.from(unescape(encodeURIComponent(text))).map(c=>c.charCodeAt(0));
+  return t.map((v,i)=>String.fromCharCode(v ^ tk[i%tk.length])).join('');
+}
+document.getElementById('xorEnc').onclick=()=>{
+  const t=document.getElementById('cryptoIn').value; const k=document.getElementById('pwd').value||'';
+  const res=btoa(unescape(encodeURIComponent(xorWithKey(t,k))));
+  document.getElementById('cryptoOut').value=res;
+};
+document.getElementById('xorDec').onclick=()=>{
+  try{
+    const k=document.getElementById('pwd').value||'';
+    const raw=decodeURIComponent(escape(atob(document.getElementById('cryptoIn').value||"")));
+    document.getElementById('cryptoOut').value = xorWithKey(raw,k);
+  }catch(e){document.getElementById('cryptoOut').value='Error'}
+};
+
+// SHA-256 using SubtleCrypto
+async function sha256Hex(msg){
+  const enc=new TextEncoder(); const buf=await crypto.subtle.digest('SHA-256', enc.encode(msg));
+  return Array.from(new Uint8Array(buf)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+document.getElementById('sha256').onclick=async()=>{ document.getElementById('cryptoOut').value = await sha256Hex(document.getElementById('cryptoIn').value||""); };
+
+// MD5 (small impl)
+function md5cycle(x, k){
+  // minimal MD5 round - taken and trimmed for compactness (works for text)
+  function cmn(q,a,b,x,s,t){a=(a+q+x+t)|0; return ((a<<s)|(a>>> (32-s)))+b}
+  function ff(a,b,c,d,x,s,t){return cmn((b&c)|((~b)&d),a,b,x,s,t)}
+  function gg(a,b,c,d,x,s,t){return cmn((b&d)|(c&(~d)),a,b,x,s,t)}
+  function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t)}
+  function ii(a,b,c,d,x,s,t){return cmn(c^(b|(~d)),a,b,x,s,t)}
+  var a=x[0],b=x[1],c=x[2],d=x[3];
+  a=ff(a,b,c,d,k[0],7,-680876936);d=ff(d,a,b,c,k[1],12,-389564586);c=ff(c,d,a,b,k[2],17,606105819);b=ff(b,c,d,a,k[3],22,-1044525330);
+  a=gg(a,b,c,d,k[4],5,-176418897);d=gg(d,a,b,c,k[5],9,1200080426);c=gg(c,d,a,b,k[6],14,-1473231341);b=gg(b,c,d,a,k[7],20,-45705983);
+  a=hh(a,b,c,d,k[8],4,1770035416);d=hh(d,a,b,c,k[9],11,-1958414417);c=hh(c,d,a,b,k[10],16,-42063);b=hh(b,c,d,a,k[11],23,-1990404162);
+  a=ii(a,b,c,d,k[12],6,1804603682);d=ii(d,a,b,c,k[13],10,-40341101);c=ii(c,d,a,b,k[14],15,-1502002290);b=ii(b,c,d,a,k[15],21,1236535329);
+  x[0]= (x[0]+a)|0; x[1]=(x[1]+b)|0; x[2]=(x[2]+c)|0; x[3]=(x[3]+d)|0;
+}
+function md5(s){
+  // convert to little-endian words
+  var n=s.length, words=[], i;
+  for(i=0;i<n;i+=4) words[i>>2]= (s.charCodeAt(i)) | ((s.charCodeAt(i+1)||0)<<8)|((s.charCodeAt(i+2)||0)<<16)|((s.charCodeAt(i+3)||0)<<24);
+  // padding
+  words[n>>2] |= 0x80 << ((n%4)*8);
+  words[(((n+8)>>6)<<4)+14] = n*8;
+  var a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+  for(i=0;i<words.length;i+=16){ var block=[a,b,c,d]; md5cycle(block, words.slice(i,i+16)); a=block[0]; b=block[1]; c=block[2]; d=block[3]; }
+  // return hex
+  function hex(x){ var s=''; for(var j=0;j<4;j++){ s += ('00'+((x>>(j*8))&0xff).toString(16)).slice(-2);} return s; }
+  return hex(a)+hex(b)+hex(c)+hex(d);
+}
+document.getElementById('md5').onclick=()=>{ document.getElementById('cryptoOut').value = md5(document.getElementById('cryptoIn').value||""); };
+
+// --- dev ---
+document.getElementById('fmtJson').onclick=()=>{
+  try{ document.getElementById('jsonIn').value = JSON.stringify(JSON.parse(document.getElementById('jsonIn').value), null, 2); }catch(e){alert('Invalid JSON')}
+};
+document.getElementById('minJson').onclick=()=>{ try{ document.getElementById('jsonIn').value = JSON.stringify(JSON.parse(document.getElementById('jsonIn').value)); }catch(e){alert('Invalid JSON')} };
+document.getElementById('minGo').onclick=()=>{ const t=document.getElementById('minIn').value; document.getElementById('minIn').value = t.replace(/\/\/.*$/gm,'').replace(/\s+/g,' ').trim(); };
+const consoleOut=document.getElementById('consoleOut');
+document.getElementById('runBtn').onclick=()=>{
+  try{
+    const oldLog=console.log; const oldErr=console.error;
+    console.log = (...a)=>{ consoleOut.value += a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ') + '\\n'; oldLog.apply(console,a); };
+    console.error = (...a)=>{ consoleOut.value += 'ERR: '+a.join(' ') + '\\n'; oldErr.apply(console,a); };
+    const res=Function(document.getElementById('runIn').value)();
+    if(res instanceof Promise) res.then(r=>console.log(r)).catch(e=>console.error(e));
+  }catch(e){consoleOut.value += 'ERR: '+e+'\n'}
+};
+document.getElementById('clearConsole').onclick=()=>consoleOut.value='';
+
+// --- data:uri generation & open ---
+const rawHtml = `PLACEHOLDER_HTML`;
+document.getElementById('openData').onclick=()=>{ 
+  const h = document.documentElement.outerHTML;
+  const uri = 'data:text/html;base64,' + btoa(unescape(encodeURIComponent(h)));
+  prompt('Copy data: URI (base64)', uri);
+};
+document.getElementById('openNew').onclick=()=>{
+  const w = window.open('');
+  w.document.write(document.documentElement.outerHTML);
+  w.document.close();
+};
+</script>
+</body>
+</html>
